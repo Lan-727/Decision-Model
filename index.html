@@ -41,7 +41,7 @@ th:first-child,td:first-child{text-align:left}
 .note{padding:10px 12px;border-radius:9px;background:#f1f5fb;color:#42516b;font-size:13px;margin-top:12px}
 .note.error{background:#fff0f0;color:var(--red)}
 .note.good{background:#eaf8f1;color:var(--green)}
-.results{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .metric{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fbfcff}
 .metric h3{font-size:13px;margin:0 0 6px}
 .metric .value{font-size:22px;font-weight:800}
@@ -79,11 +79,13 @@ a{color:#3156d3}
 </style>
 </head>
 <body>
+
 <header>
 <div class="eyebrow">Decision analysis workspace</div>
 <h1>DecisionLab</h1>
 <p>Compare alternatives under uncertainty. Edit the problem, explore decision criteria, and watch the staged-filtering process recalculate instantly.</p>
 </header>
+
 <main>
 <div class="toolbar">
 <label for="example">Load example</label>
@@ -94,6 +96,7 @@ a{color:#3156d3}
 </select>
 <button id="reset" class="secondary">Reset current example</button>
 </div>
+
 <div class="grid">
 <section class="panel wide">
 <h2>Decision problem</h2>
@@ -105,20 +108,24 @@ a{color:#3156d3}
 </div>
 <div id="validation" class="note" role="status">All calculations update automatically as you edit the table.</div>
 </section>
+
 <section class="panel">
 <h2>State probabilities</h2>
 <p class="sub">Enter probabilities as percentages. They must be non-negative and total 100%.</p>
 <div class="table-wrap"><table id="probTable"></table></div>
 <div id="probStatus" class="note"></div>
 </section>
+
 <section class="panel">
 <h2>Decision criteria</h2>
 <p class="sub">Results include the criterion value and every tied recommended alternative.</p>
 <div class="results" id="results"></div>
 </section>
+
 <section class="panel wide">
 <h2>Staged filtering</h2>
 <p class="sub">Add filtering methods, arrange their order, and choose how many alternatives should survive. Each method filters the survivors from the previous step.</p>
+
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0">
 <label><strong>Add a filtering method</strong><br>
 <select id="methodPicker" style="margin-top:7px;min-width:220px">
@@ -129,115 +136,308 @@ a{color:#3156d3}
 </select>
 </label>
 <button id="addMethod">＋ Add method</button>
+
 <label><strong>Target survivors</strong><br>
 <select id="targetSurvivors" style="margin-top:7px;min-width:90px"></select>
 </label>
 </div>
+
 <div id="methodSequence" class="stage-list" aria-live="polite"></div>
 <div id="stages" class="stage-list" style="margin-top:12px"></div>
+
 <div class="note">Available methods: Maximax, Maximin, Minimax Regret, and EMV/Bayes. Use the arrows to change the order and × to remove a method. Ties are always retained, so the final number may be higher than the target.</div>
 </section>
+
 <section class="panel wide">
 <h2>Staged-filtering flow diagram</h2>
 <p class="sub">The diagram mirrors the live filtering stages. It shows the retained and eliminated alternatives at each step.</p>
 <div id="flow" class="flow" aria-live="polite"></div>
 </section>
 </div>
+
+<section class="panel wide" style="margin-top:16px;text-align:center" aria-label="AI development conversation">
+<h2>AI Development Conversation</h2>
+<p class="sub">View the ChatGPT conversation used to develop this decision model.</p>
+<a href="https://chatgpt.com/share/6ae92345-14b0-83e9-8c80-4fe65d728d55" target="_blank" rel="noopener noreferrer">Open the AI development conversation ↗</a>
+</section>
+
 <footer>DecisionLab · Maximax · Maximin · Minimax Regret · EMV / Bayes</footer>
 </main>
+
 <script>
 const examples={
-farm:{alts:["Expand acreage","Upgrade irrigation","Keep current farm"],states:["High demand","Stable demand","Drought"],payoffs:[[120,65,-45],[82,72,28],[48,48,48]],probs:[.35,.40,.25]},
-product:{alts:["Premium launch","Budget launch","Delay launch","License product"],states:["Strong market","Average market","Weak market"],payoffs:[[180,55,-110],[95,62,8],[30,40,25],[105,75,15]],probs:[.25,.50,.25]},
-custom:{alts:["Alternative 1","Alternative 2"],states:["State 1","State 2"],payoffs:[[10,4],[6,8]],probs:[.5,.5]}
+farm:{
+alts:["Expand acreage","Upgrade irrigation","Keep current farm"],
+states:["High demand","Stable demand","Drought"],
+payoffs:[[120,65,-45],[82,72,28],[48,48,48]],
+probs:[.35,.40,.25]
+},
+product:{
+alts:["Premium launch","Budget launch","Delay launch","License product"],
+states:["Strong market","Average market","Weak market"],
+payoffs:[[180,55,-110],[95,62,8],[30,40,25],[105,75,15]],
+probs:[.25,.50,.25]
+},
+custom:{
+alts:["Alternative 1","Alternative 2"],
+states:["State 1","State 2"],
+payoffs:[[10,4],[6,8]],
+probs:[.5,.5]
+}
 };
+
 const methodInfo={
-maximax:{name:"Maximax",mode:"max",detail:"Retain the alternative(s) with the highest possible payoff."},
-maximin:{name:"Maximin",mode:"max",detail:"Retain the alternative(s) with the highest worst-case payoff."},
-regret:{name:"Minimax Regret (Savage)",mode:"min",detail:"Retain the alternative(s) with the lowest maximum opportunity loss."},
-emv:{name:"EMV / Bayes",mode:"max",detail:"Retain the alternative(s) with the highest probability-weighted expected payoff."}
+maximax:{
+name:"Maximax",
+mode:"max",
+detail:"Retain the alternative(s) with the highest possible payoff."
+},
+maximin:{
+name:"Maximin",
+mode:"max",
+detail:"Retain the alternative(s) with the highest worst-case payoff."
+},
+regret:{
+name:"Minimax Regret (Savage)",
+mode:"min",
+detail:"Retain the alternative(s) with the lowest maximum opportunity loss."
+},
+emv:{
+name:"EMV / Bayes",
+mode:"max",
+detail:"Retain the alternative(s) with the highest probability-weighted expected payoff."
+}
 };
-let data=structuredClone(examples.farm),selected="farm",methodOrder=["maximax","maximin","regret","emv"];
+
+let data=structuredClone(examples.farm);
+let selected="farm";
+let methodOrder=["maximax","maximin","regret","emv"];
+
 const $=id=>document.getElementById(id);
 const fmt=n=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:2}):"—";
+
 function esc(s){
-return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+return String(s).replace(/[&<>"']/g,c=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[c]));
 }
+
 function winners(vals,mode){
 let best=mode==="min"?Math.min(...vals):Math.max(...vals);
-return{best,ids:vals.map((v,i)=>Math.abs(v-best)<1e-9?i:-1).filter(i=>i>=0)};
+return{
+best,
+ids:vals.map((v,i)=>Math.abs(v-best)<1e-9?i:-1).filter(i=>i>=0)
+};
 }
+
 function validate(){
-const ok=data.alts.length>0&&data.states.length>0&&data.payoffs.length===data.alts.length&&data.payoffs.every(r=>r.length===data.states.length&&r.every(Number.isFinite));
+const ok=data.alts.length>0&&
+data.states.length>0&&
+data.payoffs.length===data.alts.length&&
+data.payoffs.every(r=>r.length===data.states.length&&r.every(Number.isFinite));
+
 const sum=data.probs.reduce((a,b)=>a+(Number.isFinite(b)?b:0),0);
-const probOK=ok&&data.probs.length===data.states.length&&data.probs.every(p=>Number.isFinite(p)&&p>=0)&&Math.abs(sum-1)<1e-8;
+
+const probOK=ok&&
+data.probs.length===data.states.length&&
+data.probs.every(p=>Number.isFinite(p)&&p>=0)&&
+Math.abs(sum-1)<1e-8;
+
 $('validation').className='note'+(!ok?' error':'');
-$('validation').textContent=ok?'Payoff matrix valid.':'Enter a finite numeric payoff for every alternative/state pair.';
+$('validation').textContent=ok?
+'Payoff matrix valid.':
+'Enter a finite numeric payoff for every alternative/state pair.';
+
 $('probStatus').className='note'+(!probOK?' error':' good');
-$('probStatus').textContent=probOK?`Probability total: ${(sum*100).toFixed(1)}% — valid.`:`Probability total: ${(sum*100).toFixed(1)}%. Adjust values to total exactly 100%.`;
+$('probStatus').textContent=probOK?
+`Probability total: ${(sum*100).toFixed(1)}% — valid.`:
+`Probability total: ${(sum*100).toFixed(1)}%. Adjust values to total exactly 100%.`;
+
 return{ok,probOK};
 }
+
 function renderTables(){
-let h='<thead><tr><th>Alternative / state</th>'+data.states.map((s,j)=>`<th><input class="name-input state-name" data-j="${j}" aria-label="State ${j+1} name" value="${esc(s)}"><button class="small danger del-state" data-j="${j}" title="Remove state">×</button></th>`).join('')+'<th>Action</th></tr></thead><tbody>';
+let h='<thead><tr><th>Alternative / state</th>'+
+data.states.map((s,j)=>`
+<th>
+<input class="name-input state-name" data-j="${j}" aria-label="State ${j+1} name" value="${esc(s)}">
+<button class="small danger del-state" data-j="${j}" title="Remove state">×</button>
+</th>`).join('')+
+'<th>Action</th></tr></thead><tbody>';
+
 data.alts.forEach((a,i)=>{
-h+=`<tr><td><div class="rowhead"><input class="name-input alt-name" data-i="${i}" aria-label="Alternative ${i+1} name" value="${esc(a)}"></div></td>`;
-data.payoffs[i].forEach((v,j)=>h+=`<td><input class="pay-input payoff" type="number" step="any" data-i="${i}" data-j="${j}" value="${Number.isFinite(v)?v:''}" aria-label="Payoff ${esc(a)}, ${esc(data.states[j])}"></td>`);
+h+=`<tr><td><div class="rowhead">
+<input class="name-input alt-name" data-i="${i}" aria-label="Alternative ${i+1} name" value="${esc(a)}">
+</div></td>`;
+
+data.payoffs[i].forEach((v,j)=>{
+h+=`<td><input class="pay-input payoff" type="number" step="any" data-i="${i}" data-j="${j}" value="${Number.isFinite(v)?v:''}" aria-label="Payoff ${esc(a)}, ${esc(data.states[j])}"></td>`;
+});
+
 h+=`<td><button class="small danger del-alt" data-i="${i}">Remove</button></td></tr>`;
 });
+
 $('payoffTable').innerHTML=h+'</tbody>';
-$('probTable').innerHTML='<thead><tr><th>State</th><th>Probability (%)</th></tr></thead><tbody>'+data.states.map((s,j)=>`<tr><td>${esc(s)}</td><td><input class="prob-input probability" type="number" min="0" max="100" step="any" data-j="${j}" value="${(data.probs[j]*100).toFixed(2)}" aria-label="Probability for ${esc(s)}"></td></tr>`).join('')+'</tbody>';
+
+$('probTable').innerHTML=
+'<thead><tr><th>State</th><th>Probability (%)</th></tr></thead><tbody>'+
+data.states.map((s,j)=>`
+<tr>
+<td>${esc(s)}</td>
+<td><input class="prob-input probability" type="number" min="0" max="100" step="any" data-j="${j}" value="${(data.probs[j]*100).toFixed(2)}" aria-label="Probability for ${esc(s)}"></td>
+</tr>`).join('')+
+'</tbody>';
 }
+
 function getCriterionValues(key,probOK){
 const rows=data.payoffs;
 const mins=rows.map(r=>Math.min(...r));
 const maxs=rows.map(r=>Math.max(...r));
 const stateBest=data.states.map((_,j)=>Math.max(...rows.map(r=>r[j])));
+
 switch(key){
 case'maximax':return maxs;
 case'maximin':return mins;
-case'regret':return rows.map(r=>Math.max(...r.map((v,j)=>stateBest[j]-v)));
-case'emv':return probOK?rows.map(r=>r.reduce((s,v,j)=>s+v*data.probs[j],0)):null;
+case'regret':
+return rows.map(r=>Math.max(...r.map((v,j)=>stateBest[j]-v)));
+case'emv':
+return probOK?rows.map(r=>r.reduce((s,v,j)=>s+v*data.probs[j],0)):null;
 default:return null;
 }
 }
+
 function renderMethodSequence(){
 const picker=$('methodPicker');
-[...picker.options].forEach(o=>o.disabled=methodOrder.includes(o.value));
-$('methodSequence').innerHTML=methodOrder.length?methodOrder.map((key,i)=>`<div class="method-row"><span class="method-name">${i+1}. ${methodInfo[key].name}</span><button class="secondary move-method" data-i="${i}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${methodInfo[key].name} up">↑</button><button class="secondary move-method" data-i="${i}" data-dir="1" ${i===methodOrder.length-1?'disabled':''} aria-label="Move ${methodInfo[key].name} down">↓</button><button class="danger remove-method" data-i="${i}" aria-label="Remove ${methodInfo[key].name}">× Remove</button></div>`).join(''):'<div class="note">No methods selected. Add at least one filtering method.</div>';
+
+[...picker.options].forEach(o=>{
+o.disabled=methodOrder.includes(o.value);
+});
+
+$('methodSequence').innerHTML=methodOrder.length?
+methodOrder.map((key,i)=>`
+<div class="method-row">
+<span class="method-name">${i+1}. ${methodInfo[key].name}</span>
+<button class="secondary move-method" data-i="${i}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${methodInfo[key].name} up">↑</button>
+<button class="secondary move-method" data-i="${i}" data-dir="1" ${i===methodOrder.length-1?'disabled':''} aria-label="Move ${methodInfo[key].name} down">↓</button>
+<button class="danger remove-method" data-i="${i}" aria-label="Remove ${methodInfo[key].name}">× Remove</button>
+</div>`).join(''):
+'<div class="note">No methods selected. Add at least one filtering method.</div>';
 }
+
 function calculate(){
 const{ok,probOK}=validate();
-if(!ok){$('results').innerHTML='';$('stages').innerHTML='';$('flow').innerHTML='';return;}
+
+if(!ok){
+$('results').innerHTML='';
+$('stages').innerHTML='';
+$('flow').innerHTML='';
+return;
+}
+
 const metricKeys=['maximax','maximin','regret','emv'];
+
 $('results').innerHTML=metricKeys.map(key=>{
-const vals=getCriterionValues(key,probOK),info=methodInfo[key],w=vals?winners(vals,info.mode):{best:NaN,ids:[]};
-return`<div class="metric"><h3>${info.name}</h3><div class="value">${fmt(w.best)}</div><div class="winner">${w.ids.length?w.ids.map(i=>esc(data.alts[i])).join(', '):'—'}</div><p>${key==='emv'&&!probOK?'Requires valid probabilities totaling 100%.':info.detail}</p></div>`;
+const vals=getCriterionValues(key,probOK);
+const info=methodInfo[key];
+const w=vals?winners(vals,info.mode):{best:NaN,ids:[]};
+
+return`
+<div class="metric">
+<h3>${info.name}</h3>
+<div class="value">${fmt(w.best)}</div>
+<div class="winner">${w.ids.length?w.ids.map(i=>esc(data.alts[i])).join(', '):'—'}</div>
+<p>${key==='emv'&&!probOK?'Requires valid probabilities totaling 100%.':info.detail}</p>
+</div>`;
 }).join('');
+
 const targetSelect=$('targetSurvivors');
 const oldTarget=Number(targetSelect.value)||1;
-targetSelect.innerHTML=Array.from({length:data.alts.length},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+
+targetSelect.innerHTML=Array.from(
+{length:data.alts.length},
+(_,i)=>`<option value="${i+1}">${i+1}</option>`
+).join('');
+
 targetSelect.value=String(Math.min(oldTarget,data.alts.length));
 const target=Number(targetSelect.value)||1;
-let survivors=data.alts.map((_,i)=>i),stageData=[];
+
+let survivors=data.alts.map((_,i)=>i);
+let stageData=[];
+
 for(const key of methodOrder){
 if(survivors.length<=target)break;
-const info=methodInfo[key],values=getCriterionValues(key,probOK),before=[...survivors];
-if(!values){stageData.push({key,info,before,after:before,best:NaN,valid:false});continue;}
+
+const info=methodInfo[key];
+const values=getCriterionValues(key,probOK);
+const before=[...survivors];
+
+if(!values){
+stageData.push({key,info,before,after:before,best:NaN,valid:false});
+continue;
+}
+
 const v=before.map(i=>values[i]);
 const best=info.mode==='min'?Math.min(...v):Math.max(...v);
+
 survivors=before.filter(i=>Math.abs(values[i]-best)<1e-9);
+
 stageData.push({key,info,before,after:[...survivors],best,valid:true});
 }
+
 const final=survivors;
-const status=final.length<=target?`Target reached: ${final.length} survivor(s).`:`${final.length} survivor(s) remain after all selected methods; target was ${target}.`;
-$('stages').innerHTML=stageData.length?stageData.map(s=>`<div class="stage"><div class="stage-head"><strong>${s.info.name}</strong><strong>${s.valid?fmt(s.best):'Not available'}</strong></div><p>${s.info.detail}${s.valid?' Criterion value: '+fmt(s.best)+'.':' Valid probabilities totaling 100% are required; this method was skipped.'}</p><div class="chips">${s.before.map(i=>`<span class="chip ${s.after.includes(i)?'':'out'}">${esc(data.alts[i])}${s.after.includes(i)?' · retained':' · eliminated'}</span>`).join('')}</div></div>`).join(''):`<div class="note">Add a filtering method to begin.</div>`;
-$('flow').innerHTML=`<div class="flow-node"><strong>Start</strong><br>${data.alts.length} alternatives · ${data.states.length} states</div><div class="arrow">↓</div>`+stageData.map(s=>`<div class="flow-node"><strong>${s.info.name}</strong><br>${s.valid?`Best value: ${fmt(s.best)} · ${s.after.length} retained / ${s.before.length-s.after.length} eliminated`:'Skipped: valid probabilities required'}</div><div class="arrow">↓</div>`).join('')+`<div class="flow-node final"><strong>Final outcome</strong><br>${final.map(i=>esc(data.alts[i])).join(' · ')}<br><small>${status}</small></div>`;
+const status=final.length<=target?
+`Target reached: ${final.length} survivor(s).`:
+`${final.length} survivor(s) remain after all selected methods; target was ${target}.`;
+
+$('stages').innerHTML=stageData.length?
+stageData.map(s=>`
+<div class="stage">
+<div class="stage-head">
+<strong>${s.info.name}</strong>
+<strong>${s.valid?fmt(s.best):'Not available'}</strong>
+</div>
+<p>${s.info.detail}${s.valid?' Criterion value: '+fmt(s.best)+'.':' Valid probabilities totaling 100% are required; this method was skipped.'}</p>
+<div class="chips">
+${s.before.map(i=>`
+<span class="chip ${s.after.includes(i)?'':'out'}">
+${esc(data.alts[i])}${s.after.includes(i)?' · retained':' · eliminated'}
+</span>`).join('')}
+</div>
+</div>`).join(''):
+'<div class="note">Add a filtering method to begin.</div>';
+
+$('flow').innerHTML=`
+<div class="flow-node">
+<strong>Start</strong><br>
+${data.alts.length} alternatives · ${data.states.length} states
+</div>
+<div class="arrow">↓</div>`+
+stageData.map(s=>`
+<div class="flow-node">
+<strong>${s.info.name}</strong><br>
+${s.valid?
+`Best value: ${fmt(s.best)} · ${s.after.length} retained / ${s.before.length-s.after.length} eliminated`:
+'Skipped: valid probabilities required'}
+</div>
+<div class="arrow">↓</div>`).join('')+
+`
+<div class="flow-node final">
+<strong>Final outcome</strong><br>
+${final.map(i=>esc(data.alts[i])).join(' · ')}<br>
+<small>${status}</small>
+</div>`;
 }
+
 function refresh(){
 renderTables();
 renderMethodSequence();
 calculate();
 }
+
 $('addMethod').addEventListener('click',()=>{
 const key=$('methodPicker').value;
 if(!methodOrder.includes(key)){
@@ -246,15 +446,20 @@ renderMethodSequence();
 calculate();
 }
 });
+
 $('methodSequence').addEventListener('click',e=>{
 const t=e.target;
+
 if(t.matches('.remove-method')){
 methodOrder.splice(+t.dataset.i,1);
 renderMethodSequence();
 calculate();
 }
+
 if(t.matches('.move-method')){
-const i=+t.dataset.i,j=i+Number(t.dataset.dir);
+const i=+t.dataset.i;
+const j=i+Number(t.dataset.dir);
+
 if(j>=0&&j<methodOrder.length){
 [methodOrder[i],methodOrder[j]]=[methodOrder[j],methodOrder[i]];
 renderMethodSequence();
@@ -262,73 +467,101 @@ calculate();
 }
 }
 });
+
 document.addEventListener('change',e=>{
 if(e.target.matches('#targetSurvivors'))calculate();
 });
+
 $('example').addEventListener('change',e=>{
 selected=e.target.value;
 data=structuredClone(examples[selected]);
 refresh();
 });
+
 $('reset').addEventListener('click',()=>{
 data=structuredClone(examples[selected]);
 refresh();
 });
+
 $('addAlt').addEventListener('click',()=>{
 data.alts.push('Alternative '+(data.alts.length+1));
 data.payoffs.push(data.states.map(()=>0));
 refresh();
 });
+
 $('addState').addEventListener('click',()=>{
 data.states.push('State '+(data.states.length+1));
 data.payoffs.forEach(r=>r.push(0));
 data.probs.push(0);
 refresh();
 });
+
 $('payoffTable').addEventListener('change',e=>{
 const t=e.target;
-if(t.matches('.alt-name'))data.alts[+t.dataset.i]=t.value.trim()||`Alternative ${+t.dataset.i+1}`;
-if(t.matches('.state-name'))data.states[+t.dataset.j]=t.value.trim()||`State ${+t.dataset.j+1}`;
+
+if(t.matches('.alt-name')){
+data.alts[+t.dataset.i]=t.value.trim()||`Alternative ${+t.dataset.i+1}`;
+}
+
+if(t.matches('.state-name')){
+data.states[+t.dataset.j]=t.value.trim()||`State ${+t.dataset.j+1}`;
+}
+
 if(t.matches('.payoff')){
 const v=t.value.trim();
 data.payoffs[+t.dataset.i][+t.dataset.j]=v===''?NaN:Number(v);
 }
+
 refresh();
 });
+
 $('payoffTable').addEventListener('click',e=>{
 const t=e.target;
+
 if(t.matches('.del-alt')){
 const i=+t.dataset.i;
-if(data.alts.length<=1)return alert('At least one alternative is required.');
+
+if(data.alts.length<=1)
+return alert('At least one alternative is required.');
+
 data.alts.splice(i,1);
 data.payoffs.splice(i,1);
 refresh();
 }
+
 if(t.matches('.del-state')){
 const j=+t.dataset.j;
-if(data.states.length<=1)return alert('At least one state is required.');
+
+if(data.states.length<=1)
+return alert('At least one state is required.');
+
 data.states.splice(j,1);
 data.payoffs.forEach(r=>r.splice(j,1));
 data.probs.splice(j,1);
 refresh();
 }
 });
+
 $('payoffTable').addEventListener('input',e=>{
 const t=e.target;
+
 if(t.matches('.payoff')){
 const v=t.value.trim();
 data.payoffs[+t.dataset.i][+t.dataset.j]=v===''?NaN:Number(v);
 calculate();
 }
 });
+
 $('probTable').addEventListener('input',e=>{
 const t=e.target;
+
 if(t.matches('.probability')){
 const v=t.value.trim();
 data.probs[+t.dataset.j]=v===''?NaN:Number(v)/100;
 calculate();
 }
 });
+
 refresh();
 </script>
 </body>
